@@ -1,0 +1,63 @@
+class TuringMachine:
+    def __init__(self, tape, blank_symbol='_', initial_state='q0',
+                 final_states=None, transition_function=None):
+        self.tape = list(tape)
+        self.blank_symbol = blank_symbol
+        self.head = 0
+        self.state = initial_state
+        self.final_states = final_states if final_states else ['q_accept']
+        self.transition_function = transition_function if transition_function else {}
+
+    def step(self):
+        # Read current symbol
+        current_symbol = self.tape[self.head] if self.head < len(self.tape) else self.blank_symbol
+
+        # Get transition rule
+        key = (self.state, current_symbol)
+        if key not in self.transition_function:
+            return False  # Halt if no rule
+
+        new_state, write_symbol, direction = self.transition_function[key]
+
+        # Write symbol
+        if self.head < len(self.tape):
+            self.tape[self.head] = write_symbol
+        else:
+            self.tape.append(write_symbol)
+
+        # Move head
+        if direction == 'R':
+            self.head += 1
+        elif direction == 'L':
+            self.head -= 1
+            if self.head < 0:
+                self.tape.insert(0, self.blank_symbol)
+                self.head = 0
+
+        # Update state
+        self.state = new_state
+        return True
+
+    def run(self):
+        while self.state not in self.final_states:
+            if not self.step():
+                break
+        return ''.join(self.tape).rstrip(self.blank_symbol)
+
+
+# Example: increment a binary number
+# States: q0 = move right to find blank, q1 = add 1, q_accept = done
+transitions = {
+    ('q0', '0'): ('q0', '0', 'R'),
+    ('q0', '1'): ('q0', '1', 'R'),
+    ('q0', '_'): ('q1', '_', 'L'),
+    ('q1', '0'): ('q_accept', '1', 'S'),  # stop
+    ('q1', '1'): ('q1', '0', 'L'),
+    ('q1', '_'): ('q_accept', '1', 'S')   # if carry beyond MSB
+}
+
+# Run the machine
+tm = TuringMachine(tape='1011', transition_function=transitions)
+result = tm.run()
+print(f"Original: 1011")
+print(f"Incremented: {result}")
